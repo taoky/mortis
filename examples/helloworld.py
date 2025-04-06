@@ -1,9 +1,10 @@
 import asyncio
 from mortis import Mortis
 import logging
+import os
 
 logging.basicConfig(
-    level=logging.WARNING,
+    level=logging.DEBUG if os.environ.get("DEBUG") else logging.INFO,
     format="%(name)s - %(levelname)s - %(message)s"
 )
 

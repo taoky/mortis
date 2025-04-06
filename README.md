@@ -24,9 +24,10 @@ mortis.py 是一个**异步**的 Python 库，暴露的 `Mortis` 类可以直接
 import asyncio
 from mortis import Mortis
 import logging
+import os
 
 logging.basicConfig(
-    level=logging.WARNING,
+    level=logging.DEBUG if os.environ.get("DEBUG") else logging.INFO,
     format="%(name)s - %(levelname)s - %(message)s"
 )
 
