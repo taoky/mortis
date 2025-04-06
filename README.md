@@ -14,4 +14,27 @@
 
 - m1：把整个台词集全塞到 prompt 里面，让模型选择（4k 行台词大约 40k token，按每 1M token 2 元来算的话，100 块可以推理个大约 1250 次，有点小贵）
 - m2：分两步，第一步让模型提供适合回复的关键词，搜索后第二步让模型选择
-- m3：分两阶段，第一阶段生成每一句台词的 embedding 保存到本地，第二阶段让模型输出回复，回复也生成 embedding，选择最相似的回复（容易前言不搭后语）
+- m3：分两阶段，第一阶段生成每一句台词的 embedding 保存到本地（参考 playground/embeddinggen-m3.py，生成 embedding 的金钱成本极低），第二阶段让模型输出回复，回复也生成 embedding，选择最相似的回复（容易前言不搭后语）
+
+## mortis.py
+
+mortis.py 是一个**异步**的 Python 库，暴露的 `Mortis` 类可以直接使用：
+
+```python
+import asyncio
+from mortis import Mortis
+
+with open("lines.txt", "r") as f:
+    lines = f.readlines()
+    lines = [line.strip() for line in lines]
+with open("key", "r") as f:
+    key = f.read().strip()
+
+mortis = Mortis(lines, key)
+
+async def main():
+    print(await mortis.respond("User: 你又睡不着吗"))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

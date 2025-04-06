@@ -3,3 +3,5 @@ contexts/
 venv/
 /mygo
 *.npy
+.mypy_cache/
+__pycache__/
