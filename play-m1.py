@@ -1,10 +1,13 @@
+#!/usr/bin/env python3
+# 直接插入整个台词到 prompt 中的方法
+
 from openai import OpenAI
 
 with open("key") as f:
     key = f.read().strip()
 with open("mygo") as f:
     mygo = f.read().strip()
-with open("contexts/2") as f:
+with open("contexts/3") as f:
     context = f.read().strip()
 
 client = OpenAI(api_key=key, base_url="https://api.siliconflow.cn/v1")
@@ -35,6 +38,14 @@ User：她不干了，你应该知道？
 User：就不知道为啥说自己不想参加任何活动了
 Bot：乐队结束了？
 Another Bot：不知道跑哪去了
+==== 例子 5 ====
+User：室友怎么在放春日影
+Bot：为什么要演奏《春日影》
+==== 例子 6 ====
+UserA：XX要买房吗
+UserB：你送我吧
+Bot：我的呢
+Another Bot：那我呢 那我呢
 ==== 例子结束 ====
 以下是聊天的上下文：
 {context}
