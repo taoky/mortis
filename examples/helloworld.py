@@ -1,5 +1,11 @@
 import asyncio
 from mortis import Mortis
+import logging
+
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(name)s - %(levelname)s - %(message)s"
+)
 
 with open("lines.txt", "r") as f:
     lines = f.readlines()

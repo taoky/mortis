@@ -23,6 +23,12 @@ mortis.py 是一个**异步**的 Python 库，暴露的 `Mortis` 类可以直接
 ```python
 import asyncio
 from mortis import Mortis
+import logging
+
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(name)s - %(levelname)s - %(message)s"
+)
 
 with open("lines.txt", "r") as f:
     lines = f.readlines()
