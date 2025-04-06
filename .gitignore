@@ -2,3 +2,4 @@ key
 contexts/
 venv/
 mygo
+*.npy
