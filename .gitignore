@@ -1,5 +1,5 @@
-key
+/key
 contexts/
 venv/
-mygo
+/mygo
 *.npy
