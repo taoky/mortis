@@ -13,8 +13,7 @@ with open("contexts/3") as f:
 client = OpenAI(api_key=key, base_url="https://api.siliconflow.cn/v1")
 model = "Pro/deepseek-ai/DeepSeek-V3"
 
-prompt = f"""
-以下提供了某部作品的全部台词：
+prompt = f"""以下提供了某部作品的全部台词：
 {mygo}
 （台词部分结束）
 请根据以下要求使用这些台词来回应用户的消息：
@@ -54,8 +53,7 @@ prompt = f"""
   …(更多示例参考省略)…
 
 以下是聊天的上下文：
-{context}
-"""
+{context}"""
 
 response = client.chat.completions.create(
     model=model,
