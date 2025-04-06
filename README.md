@@ -45,3 +45,13 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## 示例
+
+[examples/telegrambot.py](examples/telegrambot.py) 是一个 Telegram Bot 的例子。
+
+## 其他
+
+仓库使用了软链接，因而不直接兼容 Windows。
+
+License: MIT.
