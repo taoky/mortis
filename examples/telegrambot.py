@@ -1,10 +1,17 @@
 from telegram import Update
-from telegram.ext import Application, MessageHandler, ContextTypes, filters
+from telegram.ext import (
+    Application,
+    MessageHandler,
+    ContextTypes,
+    filters,
+    CommandHandler,
+)
 import logging
 import os
 from collections import defaultdict, deque
 from mortis import Mortis
 import asyncio
+from pathlib import Path
 
 logging.basicConfig(
     level=logging.DEBUG if os.environ.get("DEBUG") else logging.INFO,
@@ -22,8 +29,17 @@ with open("lines.txt", "r") as f:
 with open("key", "r") as f:
     key = f.read().strip()
 
+ADMIN_USERNAMES = os.environ.get("ADMIN_USERNAME", "").split(",")
+ALLOWED_GROUPS = os.environ.get("ALLOWED_GROUPS", "").split(",")
+assert ALLOWED_GROUPS
 
-mortis = Mortis(lines, key)
+EMBEDDING_PATH = os.environ.get("EMBEDDING_PATH")
+if EMBEDDING_PATH:
+    embedding_path = Path(EMBEDDING_PATH)
+else:
+    embedding_path = None
+
+mortis = Mortis(lines, key, embedding_path=embedding_path)
 
 
 username_mapping = {}
@@ -37,6 +53,9 @@ MAX_MESSAGES = 100
 async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         chat = update.message.chat
+        if str(chat.id) not in ALLOWED_GROUPS:
+            logging.info(f"Chat {chat.id} is not allowed.")
+            return
         user = update.message.from_user
         text = update.message.text
         date = update.message.date
@@ -57,22 +76,54 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
 async def periodic_reply(application: Application):
     while True:
         for chat_id, messages in chats.items():
-            if not replied[chat_id]:
-                context = "\n".join(
-                    f"{username}: {text} ({date})" for username, text, date in messages
+            try:
+                if not replied[chat_id]:
+                    context = "\n".join(
+                        f"{username}: {text} ({date})" for username, text, date in messages
+                    )
+                    logging.info(f"Context: {context}")
+                    response = await mortis.respond(context)
+                    logging.info(f"Response: {response}")
+                    if response:
+                        await application.bot.send_message(chat_id=chat_id, text=response)
+                    replied[chat_id] = True
+            except Exception as e:
+                logging.exception(
+                    f"Error replying to chat {chat_id}: {e}"
                 )
-                logging.info(f"Context: {context}")
-                response = await mortis.respond(context)
-                logging.info(f"Response: {response}")
-                if response:
-                    await application.bot.send_message(chat_id=chat_id, text=response)
-                replied[chat_id] = True
         await asyncio.sleep(10)
+
+
+async def method_perm_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.username not in ADMIN_USERNAMES:
+        await update.message.reply_text("You are not authorized to change the method.")
+        return
+
+
+async def method1(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await method_perm_check(update, context)
+    mortis.set_method("m1")
+    await update.message.reply_text("Method 1 selected.")
+
+
+async def method2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await method_perm_check(update, context)
+    mortis.set_method("m2")
+    await update.message.reply_text("Method 2 selected.")
+
+
+async def method3(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await method_perm_check(update, context)
+    mortis.set_method("m3")
+    await update.message.reply_text("Method 3 selected.")
 
 
 async def main():
     application = Application.builder().token(TOKEN).build()
 
+    application.add_handler(CommandHandler("method1", method1))
+    application.add_handler(CommandHandler("method2", method2))
+    application.add_handler(CommandHandler("method3", method3))
     group_handler = MessageHandler(
         filters.TEXT & filters.ChatType.GROUPS, handle_group_message
     )

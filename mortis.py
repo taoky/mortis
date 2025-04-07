@@ -183,6 +183,16 @@ class Mortis:
         self.chat_model = chat_model
         self.embedding = np.load(embedding_path) if embedding_path else None
         self.embedding_model = embedding_model
+    
+    def set_method(self, method: Literal["m1", "m2", "m3"]):
+        if method not in ["m1", "m2", "m3"]:
+            raise ValueError(f"Invalid method: {method}")
+        if method == "m3":
+            assert self.embedding_model, "embedding_model must be provided for method m3"
+            assert (
+                self.embedding is not None
+            ), "embedding must be provided for method m3"
+        self.method = method
 
     def _search_line(self, keywords: list[str]) -> list[str]:
         result = []
