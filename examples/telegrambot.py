@@ -14,6 +14,7 @@ from mortis import Mortis
 import asyncio
 from pathlib import Path
 import re
+from datetime import datetime
 
 logging.basicConfig(
     level=logging.DEBUG if os.environ.get("DEBUG") else logging.INFO,
@@ -68,6 +69,12 @@ replied = defaultdict(bool)
 MAX_MESSAGES = 100
 
 
+def append_chat(chat_id: int, payload: tuple[str, str, datetime]) -> None:
+    chats[chat_id].append(payload)
+    if len(chats[chat_id]) > MAX_MESSAGES:
+        chats[chat_id].popleft()
+
+
 async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         chat = update.message.chat
@@ -100,10 +107,8 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
             f"Received message from {user.username} ({username}) in group {chat.id} ({date}): {text}"
         )
 
-        chats[chat.id].append((username, text, date))
+        append_chat(chat.id, (username, text, date))
         replied[chat.id] = False
-        if len(chats[chat.id]) > MAX_MESSAGES:
-            chats[chat.id].popleft()
 
 
 async def periodic_reply(application: Application):
@@ -122,6 +127,7 @@ async def periodic_reply(application: Application):
                         await application.bot.send_message(
                             chat_id=chat_id, text=response
                         )
+                        append_chat(chat_id, ("Bot", response, datetime.now()))
                     replied[chat_id] = True
             except Exception as e:
                 logging.exception(f"Error replying to chat {chat_id}: {e}")
