@@ -67,6 +67,7 @@ username_counter = 0
 chats = defaultdict(deque)
 replied = defaultdict(bool)
 MAX_MESSAGES = 100
+is_shownak = False
 
 
 def clear_state():
@@ -127,13 +128,18 @@ async def periodic_reply(application: Application):
                         for username, text, date in messages
                     )
                     logging.info(f"Context: {context}")
-                    response = await mortis.respond(context)
+                    response, nak = await mortis.respond(context)
                     logging.info(f"Response: {response}")
                     if response:
                         await application.bot.send_message(
                             chat_id=chat_id, text=response
                         )
                         append_chat(chat_id, ("Bot", response, datetime.now()))
+                    else:
+                        if is_shownak:
+                            await application.bot.send_message(
+                                chat_id=chat_id, text=f"NAK 原因: {nak}"
+                            )
                     replied[chat_id] = True
             except Exception as e:
                 logging.exception(f"Error replying to chat {chat_id}: {e}")
@@ -150,19 +156,19 @@ async def method_perm_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def method1(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await method_perm_check(update, context)
+    # await method_perm_check(update, context)
     mortis.set_method("m1")
     await update.message.reply_text("Method 1 selected.")
 
 
 async def method2(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await method_perm_check(update, context)
+    # await method_perm_check(update, context)
     mortis.set_method("m2")
     await update.message.reply_text("Method 2 selected.")
 
 
 async def method3(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await method_perm_check(update, context)
+    # await method_perm_check(update, context)
     mortis.set_method("m3")
     await update.message.reply_text("Method 3 selected.")
 
@@ -172,15 +178,29 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat.id
     method = mortis.method
     await update.message.reply_text(
-        f"User: {username} ({username in ADMIN_USERNAMES})\nChat ID: {chat_id} ({str(chat_id) in ALLOWED_GROUPS})\nMethod: {method}\n"
+        f"""User: {username} ({username in ADMIN_USERNAMES})
+Chat ID: {chat_id} ({str(chat_id) in ALLOWED_GROUPS})
+Method: {method}
+Show NAK: {is_shownak}
+"""
     )
 
 
 async def clear(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await method_perm_check(update, context)
+    # await method_perm_check(update, context)
     clear_state()
     logging.info("Cleared all data.")
     await update.message.reply_text("Cleared all data.")
+
+
+async def shownak(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global is_shownak
+    if is_shownak:
+        is_shownak = False
+        await update.message.reply_text("Shownak disabled.")
+    else:
+        is_shownak = True
+        await update.message.reply_text("Shownak enabled.")
 
 
 async def main():
@@ -191,6 +211,7 @@ async def main():
     application.add_handler(CommandHandler("method3", method3))
     application.add_handler(CommandHandler("info", info))
     application.add_handler(CommandHandler("clear", clear))
+    application.add_handler(CommandHandler("shownak", shownak))
     group_handler = MessageHandler(
         filters.TEXT & filters.ChatType.GROUPS, handle_group_message
     )

@@ -208,7 +208,7 @@ class Mortis:
         closest_lines = [self.lines[i] for i in closest_indices]
         return closest_lines
 
-    async def respond(self, context: str) -> Optional[str]:
+    async def respond(self, context: str) -> tuple[Optional[str], Optional[str]]:
         match self.method:
             case "m1":
                 return await self._respond_m1(context)
@@ -219,7 +219,7 @@ class Mortis:
             case _:
                 raise ValueError(f"Unknown method: {self.method}")
 
-    async def _respond_m1(self, context: str) -> Optional[str]:
+    async def _respond_m1(self, context: str) -> tuple[Optional[str], Optional[str]]:
         logger.debug("context: %s", context)
         prompt = prompt_m1.format(lines="\n".join(self.lines), context=context)
         response = await self.openai.chat.completions.create(
@@ -235,10 +235,10 @@ class Mortis:
         logger.debug("LLM reply: %s", response)
         if response.startswith("NAK"):
             logger.warning("LLM NAK: %s", response[4:])
-            return None
-        return response
+            return (None, response[4:])
+        return (response, None)
 
-    async def _respond_m2(self, context: str) -> Optional[str]:
+    async def _respond_m2(self, context: str) -> tuple[Optional[str], Optional[str]]:
         logger.debug("context: %s", context)
         prompt1 = prompt_m2_1.format(context=context)
         response = await self.openai.chat.completions.create(
@@ -255,7 +255,7 @@ class Mortis:
         results = self._search_line(keywords)
         if len(results) == 0:
             logger.warning("No search results found")
-            return None
+            return (None, f"对 {keywords} 无搜索结果")
         prompt2 = prompt_m2_2.format(result=json.dumps(results, ensure_ascii=False))
         response = await self.openai.chat.completions.create(
             model=self.chat_model,
@@ -278,10 +278,10 @@ class Mortis:
         logger.debug("LLM reply: %s", response_text)
         if response_text.startswith("NAK"):
             logger.warning("LLM NAK: %s", response_text[4:])
-            return None
-        return response_text
+            return (None, response_text[4:])
+        return (response_text, None)
     
-    async def _respond_m3(self, context: str) -> Optional[str]:
+    async def _respond_m3(self, context: str) -> tuple[Optional[str], Optional[str]]:
         logger.debug("context: %s", context)
         prompt = prompt_m3_1.format(context=context)
         response = await self.openai.chat.completions.create(
@@ -297,7 +297,7 @@ class Mortis:
         logger.debug("LLM reply: %s", response_text)
         if len(response_text) == 0:
             logger.warning("No reply")
-            return None
+            return (None, "模型无回复")
         response = await self.openai.embeddings.create(
             model=self.embedding_model,
             input=response_text,
@@ -319,8 +319,8 @@ class Mortis:
         logger.debug("LLM reply: %s", response_text)
         if response_text.startswith("NAK"):
             logger.warning("LLM NAK: %s", response_text[4:])
-            return None
-        return response_text
+            return (None, response_text[4:])
+        return (response_text, None)
 
 if __name__ == "__main__":
     print("Please use this module as a library: from mortis import Mortis")
