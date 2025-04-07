@@ -50,7 +50,7 @@ response = client.chat.completions.create(
 
 response_text = response.choices[0].message.content
 print(response_text)
-results = search_line(response_text)
+results = search_line(response_text.split(","))
 print("搜索结果：", results)
 
 if len(results) > 0:
