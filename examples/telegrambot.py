@@ -69,6 +69,25 @@ replied = defaultdict(bool)
 MAX_MESSAGES = 100
 
 
+def clear_state():
+    global chats
+    global replied
+    global username_mapping
+    global username_counter
+    chats = defaultdict(deque)
+    replied = defaultdict(bool)
+    username_mapping = {}
+    username_counter = 0
+
+
+def anonymize_username(username: str) -> str:
+    global username_counter
+    if username not in username_mapping:
+        username_mapping[username] = username_counter
+        username_counter += 1
+    return f"User{username_mapping[username]}"
+
+
 def append_chat(chat_id: int, payload: tuple[str, str, datetime]) -> None:
     chats[chat_id].append(payload)
     if len(chats[chat_id]) > MAX_MESSAGES:
@@ -86,28 +105,15 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
         date = update.message.date
 
         # username anonymization
-        global username_counter
-        if user.username not in username_mapping:
-            username_mapping[user.username] = username_counter
-            username_counter += 1
+        sender_username = anonymize_username(user.username)
         usernames_in_text = USERNAME_PATTERN.findall(text)
         for username in usernames_in_text:
-            if username in username_mapping:
-                text = text.replace(
-                    f"@{username}", f"@User{username_mapping[username]}"
-                )
-            else:
-                username_mapping[username] = username_counter
-                username_counter += 1
-                text = text.replace(
-                    f"@{username}", f"@User{username_mapping[username]}"
-                )
-        username = f"User{username_mapping[user.username]}"
+            text = text.replace(f"@{username}", f"@User{anonymize_username(username)}")
         logging.info(
-            f"Received message from {user.username} ({username}) in group {chat.id} ({date}): {text}"
+            f"Received message from {user.username} ({sender_username}) in group {chat.id} ({date}): {text}"
         )
 
-        append_chat(chat.id, (username, text, date))
+        append_chat(chat.id, (sender_username, text, date))
         replied[chat.id] = False
 
 
@@ -170,6 +176,13 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def clear(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await method_perm_check(update, context)
+    clear_state()
+    logging.info("Cleared all data.")
+    await update.message.reply_text("Cleared all data.")
+
+
 async def main():
     application = Application.builder().token(token).build()
 
@@ -177,6 +190,7 @@ async def main():
     application.add_handler(CommandHandler("method2", method2))
     application.add_handler(CommandHandler("method3", method3))
     application.add_handler(CommandHandler("info", info))
+    application.add_handler(CommandHandler("clear", clear))
     group_handler = MessageHandler(
         filters.TEXT & filters.ChatType.GROUPS, handle_group_message
     )
