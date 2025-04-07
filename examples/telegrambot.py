@@ -86,11 +86,15 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
         usernames_in_text = USERNAME_PATTERN.findall(text)
         for username in usernames_in_text:
             if username in username_mapping:
-                text = text.replace(f"@{username}", f"@User{username_mapping[username]}")
+                text = text.replace(
+                    f"@{username}", f"@User{username_mapping[username]}"
+                )
             else:
                 username_mapping[username] = username_counter
                 username_counter += 1
-                text = text.replace(f"@{username}", f"@User{username_mapping[username]}")
+                text = text.replace(
+                    f"@{username}", f"@User{username_mapping[username]}"
+                )
         username = f"User{username_mapping[user.username]}"
         logging.info(
             f"Received message from {user.username} ({username}) in group {chat.id} ({date}): {text}"
@@ -127,7 +131,9 @@ async def periodic_reply(application: Application):
 async def method_perm_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.message.from_user.username
     if username not in ADMIN_USERNAMES:
-        await update.message.reply_text(f"You ({username}) are not authorized to change the method.")
+        await update.message.reply_text(
+            f"You ({username}) are not authorized to change the method."
+        )
         raise PermissionError
 
 
@@ -149,12 +155,22 @@ async def method3(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Method 3 selected.")
 
 
+async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    username = update.message.from_user.username
+    chat_id = update.message.chat.id
+    method = mortis.method
+    await update.message.reply_text(
+        f"User: {username} ({username in ADMIN_USERNAMES})\nChat ID: {chat_id} ({str(chat_id) in ALLOWED_GROUPS})\nMethod: {method}\n"
+    )
+
+
 async def main():
     application = Application.builder().token(token).build()
 
     application.add_handler(CommandHandler("method1", method1))
     application.add_handler(CommandHandler("method2", method2))
     application.add_handler(CommandHandler("method3", method3))
+    application.add_handler(CommandHandler("info", info))
     group_handler = MessageHandler(
         filters.TEXT & filters.ChatType.GROUPS, handle_group_message
     )
