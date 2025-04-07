@@ -1,0 +1,16 @@
+# Example docker-compose file for running the Mortis Telegram bot
+services:
+  mortis:
+    image: ghcr.io/taoky/mortis:master
+    restart: unless-stopped
+    environment:
+      # Create an .env file with the following variables
+      - KEY=${KEY}
+      - TOKEN=${TOKEN}
+      - ADMIN_USERNAMES=${ADMIN_USERNAMES}
+      - ALLOWED_GROUPS=${ALLOWED_GROUPS}
+      - EMBEDDING_PATH=/app/mygo_embeddings.npy
+    command: examples/telegrambot.py
+    volumes:
+      - ./mygo_embeddings.npy:/app/mygo_embeddings.npy
+      - ./mygo:/app/lines.txt

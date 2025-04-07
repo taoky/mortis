@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -22,8 +23,15 @@ if not os.environ.get("DEBUG"):
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
-with open("token", "r") as f:
-    TOKEN = f.read().strip()
+try:
+    with open("token", "r") as f:
+        token = f.read().strip()
+except FileNotFoundError:
+    token = os.environ.get("TOKEN")
+    if not token:
+        raise ValueError(
+            "Token not found. Please provide a token in 'token' file or set 'TOKEN' environment variable."
+        )
 with open("lines.txt", "r") as f:
     lines = f.readlines()
     lines = [line.strip() for line in lines]
@@ -141,7 +149,7 @@ async def method3(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def main():
-    application = Application.builder().token(TOKEN).build()
+    application = Application.builder().token(token).build()
 
     application.add_handler(CommandHandler("method1", method1))
     application.add_handler(CommandHandler("method2", method2))

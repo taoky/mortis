@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import asyncio
 from mortis import Mortis
 import logging
