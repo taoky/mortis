@@ -1,0 +1,10 @@
+key
+__pycache__/
+*/__pycache__/
+.mypy_cache/
+*/.mypy_cache/
+venv/
+playground/
+mortis.tar
+.git/
+*/token
