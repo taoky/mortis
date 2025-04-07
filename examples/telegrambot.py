@@ -45,7 +45,7 @@ except FileNotFoundError:
             "Key not found. Please provide a key in 'key' file or set 'KEY' environment variable."
         )
 
-ADMIN_USERNAMES = os.environ.get("ADMIN_USERNAME", "").split(",")
+ADMIN_USERNAMES = os.environ.get("ADMIN_USERNAMES", "").split(",")
 ALLOWED_GROUPS = os.environ.get("ALLOWED_GROUPS", "").split(",")
 assert ALLOWED_GROUPS
 
@@ -125,9 +125,10 @@ async def periodic_reply(application: Application):
 
 
 async def method_perm_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.username not in ADMIN_USERNAMES:
-        await update.message.reply_text("You are not authorized to change the method.")
-        return
+    username = update.message.from_user.username
+    if username not in ADMIN_USERNAMES:
+        await update.message.reply_text(f"You ({username}) are not authorized to change the method.")
+        raise PermissionError
 
 
 async def method1(update: Update, context: ContextTypes.DEFAULT_TYPE):

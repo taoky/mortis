@@ -298,10 +298,11 @@ class Mortis:
         if len(response_text) == 0:
             logger.warning("No reply")
             return None
-        response_embedding = await self.openai.embeddings.create(
+        response = await self.openai.embeddings.create(
             model=self.embedding_model,
             input=response_text,
-        ).data[0].embedding
+        )
+        response_embedding = response.data[0].embedding
         closest_lines = self._find_topk_cosine_similar(response_embedding)
         logger.debug("Most similar lines: %s", closest_lines)
         prompt2 = prompt_m3_2.format(results=json.dumps(closest_lines, ensure_ascii=False), context=context)
