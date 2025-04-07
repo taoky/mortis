@@ -12,6 +12,7 @@ from collections import defaultdict, deque
 from mortis import Mortis
 import asyncio
 from pathlib import Path
+import re
 
 logging.basicConfig(
     level=logging.DEBUG if os.environ.get("DEBUG") else logging.INFO,
@@ -26,8 +27,15 @@ with open("token", "r") as f:
 with open("lines.txt", "r") as f:
     lines = f.readlines()
     lines = [line.strip() for line in lines]
-with open("key", "r") as f:
-    key = f.read().strip()
+try:
+    with open("key", "r") as f:
+        key = f.read().strip()
+except FileNotFoundError:
+    key = os.environ.get("KEY")
+    if not key:
+        raise ValueError(
+            "Key not found. Please provide a key in 'key' file or set 'KEY' environment variable."
+        )
 
 ADMIN_USERNAMES = os.environ.get("ADMIN_USERNAME", "").split(",")
 ALLOWED_GROUPS = os.environ.get("ALLOWED_GROUPS", "").split(",")
@@ -38,6 +46,8 @@ if EMBEDDING_PATH:
     embedding_path = Path(EMBEDDING_PATH)
 else:
     embedding_path = None
+
+USERNAME_PATTERN = re.compile(r"@(\w+)")
 
 mortis = Mortis(lines, key, embedding_path=embedding_path)
 
@@ -59,14 +69,25 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
         user = update.message.from_user
         text = update.message.text
         date = update.message.date
-        logging.info(
-            f"Received message from {user.username} in group {chat.id} ({date}): {text}"
-        )
+
+        # username anonymization
+        global username_counter
         if user.username not in username_mapping:
-            global username_counter
             username_mapping[user.username] = username_counter
             username_counter += 1
+        usernames_in_text = USERNAME_PATTERN.findall(text)
+        for username in usernames_in_text:
+            if username in username_mapping:
+                text = text.replace(f"@{username}", f"@User{username_mapping[username]}")
+            else:
+                username_mapping[username] = username_counter
+                username_counter += 1
+                text = text.replace(f"@{username}", f"@User{username_mapping[username]}")
         username = f"User{username_mapping[user.username]}"
+        logging.info(
+            f"Received message from {user.username} ({username}) in group {chat.id} ({date}): {text}"
+        )
+
         chats[chat.id].append((username, text, date))
         replied[chat.id] = False
         if len(chats[chat.id]) > MAX_MESSAGES:
@@ -79,18 +100,19 @@ async def periodic_reply(application: Application):
             try:
                 if not replied[chat_id]:
                     context = "\n".join(
-                        f"{username}: {text} ({date})" for username, text, date in messages
+                        f"{username}: {text} ({date})"
+                        for username, text, date in messages
                     )
                     logging.info(f"Context: {context}")
                     response = await mortis.respond(context)
                     logging.info(f"Response: {response}")
                     if response:
-                        await application.bot.send_message(chat_id=chat_id, text=response)
+                        await application.bot.send_message(
+                            chat_id=chat_id, text=response
+                        )
                     replied[chat_id] = True
             except Exception as e:
-                logging.exception(
-                    f"Error replying to chat {chat_id}: {e}"
-                )
+                logging.exception(f"Error replying to chat {chat_id}: {e}")
         await asyncio.sleep(10)
 
 

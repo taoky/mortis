@@ -14,6 +14,7 @@
 
 - m1：把整个台词集全塞到 prompt 里面，让模型选择（4k 行台词大约 40k token，按每 1M token 2 元来算的话，100 块可以推理个大约 1250 次，有点小贵）
 - m2：分两步，第一步让模型提供适合回复的关键词，搜索后第二步让模型选择
+    - 不直接使用 function call 的原因是，至少目前测试下来 siliconflow 的 function calling 几乎不工作，模型大部分时候不会调用函数，会自己瞎编回复，即使调用很多时候调用方式也不对。
 - m3：分两阶段，第一阶段生成每一句台词的 embedding 保存到本地（参考 [embeddinggen-m3.py](playground/embeddinggen-m3.py)，生成 embedding 的金钱成本极低），第二阶段让模型输出回复，回复也生成 embedding，选择最相似的 top20 回复，然后让模型选一个。
 
 ## mortis.py
@@ -48,12 +49,19 @@ if __name__ == "__main__":
 
 ## 示例
 
-[examples/telegrambot.py](examples/telegrambot.py) 是一个 Telegram Bot 的例子。
+[examples/telegrambot.py](examples/telegrambot.py) 是一个 Telegram Bot 的例子：
+
+- 用户名脱敏（放入 prompt 的用户名均改为 User0、User1 等，包括消息内部形如 `@xxx` 的内容）
+- 每个群保留 100 条聊天记录，每 10s 检查一次，如果有更新则做一次推理
+
+```shell
+ADMIN_USERNAMES=yourusername ALLOWED_GROUPS=-1234567890 EMBEDDING_PATH=./mygo_embeddings.npy python telegrambot.py
+```
 
 ## 其他
 
 仓库使用了软链接，因而不直接兼容 Windows。
 
-Prompt 会被发送至第三方服务商，请注意隐私问题。
+Prompt（包含聊天记录）会被发送至第三方服务商，请注意隐私问题。
 
 License: MIT.
