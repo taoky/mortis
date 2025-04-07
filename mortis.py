@@ -103,7 +103,7 @@ Bot：好多观众啊
 以下是搜索函数返回的台词列表（JSON 数组）：
 {result}"""
 
-prompt_m3 = """情境描述：
+prompt_m3_1 = """情境描述：
 - 你是一个极度简洁、幽默有趣的机器人，每次只能用一句话进行回复，或者选择不回复。
 - 无需任何其他限制条件，也无需调用任何函数或搜索。
 
@@ -120,6 +120,45 @@ prompt_m3 = """情境描述：
 
 以下是聊天的上下文：
 {context}"""
+
+prompt_m3_2 = """系统角色定位：
+1. 你是用于群聊闲聊的机器人，负责幽默有趣地回复用户。
+2. 若话题涉及特别严肃的事件（如重大伤亡），需要保持谨慎和严肃，不做娱乐化处理。
+
+目标：
+1. 你已经从用户处得到了一个台词列表（JSON 数组）。
+2. 你只能从这些台词中选出最合适、幽默的内容来回复，或在无合适台词时声明无法回答。
+
+回复格式：
+1. 如果可以从返回的台词中选到合适台词，请直接输出台词内容进行回答。
+2. 如果结果不满足需求，或无法从中找到可用台词，请：
+— 第一行回复“NAK”
+— 第二行简要说明原因（可保持幽默或简练）。
+示例：
+NAK
+没有可用的台词了
+
+下面是一些 Bot 使用台词库回复的示例：
+── 示例 1 ──
+User：你复习下周的考试了吗？
+Bot：并没有
+── 示例 2 ──
+User：我不想申请PhD了，想跑路
+Bot：跑了
+── 示例 3 ──
+User：woc，这么多人？
+Bot：好多观众啊
+
+注意：
+1. 在非严肃话题中，尽量保持幽默、活泼的风格。
+2. 不允许再进行任何新的搜索请求，必须基于现有搜索结果进行回答或报告无法回答。
+3. 只有在无可用台词时，才使用“NAK”。
+
+以下是聊天的上下文：
+{context}
+
+以下是搜索函数返回的台词列表（JSON 数组）：
+{results}"""
 
 
 class Mortis:
@@ -153,11 +192,11 @@ class Mortis:
                 result.append(line)
         return result
 
-    def _find_most_cosine_similar(self, embedding: list[float]) -> str:
+    def _find_topk_cosine_similar(self, embedding: list[float], k: int = 20) -> list[str]:
         distances = cdist([embedding], self.embedding, metric="cosine")
-        closest_index = np.argmin(distances)
-        closest_line = self.lines[closest_index]
-        return closest_line
+        closest_indices = np.argsort(distances[0])[:k]
+        closest_lines = [self.lines[i] for i in closest_indices]
+        return closest_lines
 
     async def respond(self, context: str) -> Optional[str]:
         match self.method:
@@ -207,10 +246,18 @@ class Mortis:
         if len(results) == 0:
             logger.warning("No search results found")
             return None
-        prompt2 = prompt_m2_2.format(result=json.dumps(results))
+        prompt2 = prompt_m2_2.format(result=json.dumps(results, ensure_ascii=False))
         response = await self.openai.chat.completions.create(
             model=self.chat_model,
             messages=[
+                {
+                    "role": "user",
+                    "content": prompt1,
+                },
+                {
+                    "role": "assistant",
+                    "content": response.choices[0].message.content.strip(),
+                },
                 {
                     "role": "user",
                     "content": prompt2,
@@ -226,7 +273,7 @@ class Mortis:
     
     async def _respond_m3(self, context: str) -> Optional[str]:
         logger.debug("context: %s", context)
-        prompt = prompt_m3.format(context=context)
+        prompt = prompt_m3_1.format(context=context)
         response = await self.openai.chat.completions.create(
             model=self.chat_model,
             messages=[
@@ -245,9 +292,24 @@ class Mortis:
             model=self.embedding_model,
             input=response_text,
         ).data[0].embedding
-        closest_line = self._find_most_cosine_similar(response_embedding)
-        logger.debug("Most similar line: %s", closest_line)
-        return closest_line
+        closest_lines = self._find_topk_cosine_similar(response_embedding)
+        logger.debug("Most similar lines: %s", closest_lines)
+        prompt2 = prompt_m3_2.format(results=json.dumps(closest_lines, ensure_ascii=False), context=context)
+        response = await self.openai.chat.completions.create(
+            model=self.chat_model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt2,
+                }
+            ],
+        )
+        response_text = response.choices[0].message.content.strip()
+        logger.debug("LLM reply: %s", response_text)
+        if response_text.startswith("NAK"):
+            logger.warning("LLM NAK: %s", response_text[4:])
+            return None
+        return response_text
 
 if __name__ == "__main__":
     print("Please use this module as a library: from mortis import Mortis")

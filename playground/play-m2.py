@@ -95,6 +95,14 @@ Bot：好多观众啊
         messages=[
             {
                 "role": "user",
+                "content": prompt1,
+            },
+            {
+                "role": "assistant",
+                "content": response_text,
+            },
+            {
+                "role": "user",
                 "content": prompt2,
             }
         ],

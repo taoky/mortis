@@ -14,7 +14,7 @@
 
 - m1：把整个台词集全塞到 prompt 里面，让模型选择（4k 行台词大约 40k token，按每 1M token 2 元来算的话，100 块可以推理个大约 1250 次，有点小贵）
 - m2：分两步，第一步让模型提供适合回复的关键词，搜索后第二步让模型选择
-- m3：分两阶段，第一阶段生成每一句台词的 embedding 保存到本地（参考 [embeddinggen-m3.py](playground/embeddinggen-m3.py)，生成 embedding 的金钱成本极低），第二阶段让模型输出回复，回复也生成 embedding，选择最相似的回复（容易前言不搭后语）
+- m3：分两阶段，第一阶段生成每一句台词的 embedding 保存到本地（参考 [embeddinggen-m3.py](playground/embeddinggen-m3.py)，生成 embedding 的金钱成本极低），第二阶段让模型输出回复，回复也生成 embedding，选择最相似的 top20 回复，然后让模型选一个。
 
 ## mortis.py
 
@@ -53,5 +53,7 @@ if __name__ == "__main__":
 ## 其他
 
 仓库使用了软链接，因而不直接兼容 Windows。
+
+Prompt 会被发送至第三方服务商，请注意隐私问题。
 
 License: MIT.
