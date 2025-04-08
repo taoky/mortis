@@ -14,7 +14,7 @@ from mortis import Mortis
 import asyncio
 from pathlib import Path
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 logging.basicConfig(
     level=logging.DEBUG if os.environ.get("DEBUG") else logging.INFO,
@@ -119,7 +119,7 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 def get_context(chat_id: int) -> str:
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     while len(chats[chat_id]) > 0 and chats[chat_id][0][2] < now - timedelta(
         minutes=10
     ):
