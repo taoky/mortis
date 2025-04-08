@@ -14,7 +14,7 @@ from mortis import Mortis
 import asyncio
 from pathlib import Path
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 logging.basicConfig(
     level=logging.DEBUG if os.environ.get("DEBUG") else logging.INFO,
@@ -118,15 +118,23 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
         replied[chat.id] = False
 
 
+def get_context(chat_id: int) -> str:
+    now = datetime.now()
+    while len(chats[chat_id]) > 0 and chats[chat_id][0][2] < now - timedelta(
+        minutes=10
+    ):
+        chats[chat_id].popleft()
+    return "\n".join(
+        f"{username}: {text} ({date})" for username, text, date in chats[chat_id]
+    )
+
+
 async def periodic_reply(application: Application):
     while True:
-        for chat_id, messages in chats.items():
+        for chat_id in chats.keys():
             try:
                 if not replied[chat_id]:
-                    context = "\n".join(
-                        f"{username}: {text} ({date})"
-                        for username, text, date in messages
-                    )
+                    context = get_context(chat_id)
                     logging.info(f"Context: {context}")
                     response, nak = await mortis.respond(context)
                     logging.info(f"Response: {response}")
