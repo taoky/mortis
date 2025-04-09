@@ -64,4 +64,6 @@ ADMIN_USERNAMES=yourusername ALLOWED_GROUPS=-1234567890 EMBEDDING_PATH=./mygo_em
 
 Prompt（包含聊天记录）会被发送至第三方服务商，请注意隐私问题。
 
+另外效果目前不太好，单纯图一乐了。
+
 License: MIT.
