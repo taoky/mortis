@@ -104,7 +104,7 @@ Bot：好多观众啊
             {
                 "role": "user",
                 "content": prompt2,
-            }
+            },
         ],
     )
     print(response.choices[0].message.content)

@@ -90,10 +90,14 @@ print("LLM 回复：", response_text)
 
 if len(response_text) > 0:
     # 生成 LLM 回复的 embedding
-    response_embedding = client.embeddings.create(
-        model=embedding_model,
-        input=response_text,
-    ).data[0].embedding
+    response_embedding = (
+        client.embeddings.create(
+            model=embedding_model,
+            input=response_text,
+        )
+        .data[0]
+        .embedding
+    )
 
     # 计算与台词库的相似度，选取 top20，然后让 LLM 选择
     distances = cdist([response_embedding], mygo_embeddings, metric="cosine")

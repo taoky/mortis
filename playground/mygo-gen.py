@@ -23,7 +23,7 @@ REPLACEMENTS = {
     "当我注意到自己心中\\N涌出的感情时，已经完全被带着走\\N了，不知为何咬紧了牙握紧了拳头，\\N甚至哭了起来。": "当我注意到自己心中涌出的感情时，已经完全被带着走了，不知为何咬紧了牙握紧了拳头，甚至哭了起来。",
     "虽然我还有些没整理好情绪，但这个\\N乐队真的很神奇。等我冷静了再写感\\N想。": "虽然我还有些没整理好情绪，但这个乐队真的很神奇。等我冷静了再写感想。",
     "我以为会一团糟，到结束却觉得\\N感动？兴奋？": "我以为会一团糟，到结束却觉得感动？兴奋？",
-    "今天的Live真精彩。乐队叫\\NCRYCHIC。吉他、键盘还有鼓都\\N不错，贝斯也挺熟练，挺有好感的。": "今天的Live真精彩。乐队叫CRYCHIC。吉他、键盘还有鼓都不错，贝斯也挺熟练，挺有好感的。"
+    "今天的Live真精彩。乐队叫\\NCRYCHIC。吉他、键盘还有鼓都\\N不错，贝斯也挺熟练，挺有好感的。": "今天的Live真精彩。乐队叫CRYCHIC。吉他、键盘还有鼓都不错，贝斯也挺熟练，挺有好感的。",
 }
 
 for i in glob.glob("Nekomoekissaten-Storage/BanG_Dream/MyGO/*.JPSC.ass"):
@@ -43,7 +43,7 @@ for i in glob.glob("Nekomoekissaten-Storage/BanG_Dream/MyGO/*.JPSC.ass"):
         text = line.plaintext
         is_skip = False
         for s in SKIPS:
-            if type(s) == str and s in text or type(s) == re.Pattern and s.search(text):
+            if type(s) is str and s in text or type(s) is re.Pattern and s.search(text):
                 is_skip = True
                 break
         if is_skip:

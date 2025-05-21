@@ -176,24 +176,26 @@ class Mortis:
     ):
         if method == "m3":
             assert embedding_model, "embedding_model must be provided for method m3"
-            assert (
-                embedding_path is not None
-            ), "embedding_path must be provided for method m3"
+            assert embedding_path is not None, (
+                "embedding_path must be provided for method m3"
+            )
         self.lines = lines
         self.method = method
         self.openai = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self.chat_model = chat_model
         self.embedding = np.load(embedding_path) if embedding_path else None
         self.embedding_model = embedding_model
-    
+
     def set_method(self, method: Literal["m1", "m2", "m3"]):
         if method not in ["m1", "m2", "m3"]:
             raise ValueError(f"Invalid method: {method}")
         if method == "m3":
-            assert self.embedding_model, "embedding_model must be provided for method m3"
-            assert (
-                self.embedding is not None
-            ), "embedding must be provided for method m3"
+            assert self.embedding_model, (
+                "embedding_model must be provided for method m3"
+            )
+            assert self.embedding is not None, (
+                "embedding must be provided for method m3"
+            )
         self.method = method
 
     def _search_line(self, keywords: list[str]) -> list[str]:
@@ -204,7 +206,9 @@ class Mortis:
                 result.append(line)
         return result
 
-    def _find_topk_cosine_similar(self, embedding: list[float], k: int = 20) -> list[str]:
+    def _find_topk_cosine_similar(
+        self, embedding: list[float], k: int = 20
+    ) -> list[str]:
         distances = cdist([embedding], self.embedding, metric="cosine")
         closest_indices = np.argsort(distances[0])[:k]
         closest_lines = [self.lines[i] for i in closest_indices]
@@ -273,7 +277,7 @@ class Mortis:
                 {
                     "role": "user",
                     "content": prompt2,
-                }
+                },
             ],
         )
         response_text = response.choices[0].message.content.strip()
@@ -282,7 +286,7 @@ class Mortis:
             logger.warning("LLM NAK: %s", response_text[4:])
             return (None, response_text[4:])
         return (response_text, None)
-    
+
     async def _respond_m3(self, context: str) -> tuple[Optional[str], Optional[str]]:
         logger.debug("context: %s", context)
         prompt = prompt_m3_1.format(context=context)
@@ -307,7 +311,9 @@ class Mortis:
         response_embedding = response.data[0].embedding
         closest_lines = self._find_topk_cosine_similar(response_embedding)
         logger.debug("Most similar lines: %s", closest_lines)
-        prompt2 = prompt_m3_2.format(results=json.dumps(closest_lines, ensure_ascii=False), context=context)
+        prompt2 = prompt_m3_2.format(
+            results=json.dumps(closest_lines, ensure_ascii=False), context=context
+        )
         response = await self.openai.chat.completions.create(
             model=self.chat_model,
             messages=[
@@ -323,6 +329,7 @@ class Mortis:
             logger.warning("LLM NAK: %s", response_text[4:])
             return (None, response_text[4:])
         return (response_text, None)
+
 
 if __name__ == "__main__":
     print("Please use this module as a library: from mortis import Mortis")

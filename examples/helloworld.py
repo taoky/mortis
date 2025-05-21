@@ -6,7 +6,7 @@ import os
 
 logging.basicConfig(
     level=logging.DEBUG if os.environ.get("DEBUG") else logging.INFO,
-    format="%(name)s - %(levelname)s - %(message)s"
+    format="%(name)s - %(levelname)s - %(message)s",
 )
 
 with open("lines.txt", "r") as f:
@@ -17,8 +17,10 @@ with open("key", "r") as f:
 
 mortis = Mortis(lines, key)
 
+
 async def main():
     print(await mortis.respond("User: 你又睡不着吗"))
+
 
 if __name__ == "__main__":
     asyncio.run(main())
