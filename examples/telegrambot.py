@@ -181,6 +181,12 @@ async def method3(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Method 3 selected.")
 
 
+async def method4(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # await method_perm_check(update, context)
+    mortis.set_method("m4")
+    await update.message.reply_text("Method 4 selected.")
+
+
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.message.from_user.username
     chat_id = update.message.chat.id
@@ -217,6 +223,7 @@ async def main():
     application.add_handler(CommandHandler("method1", method1))
     application.add_handler(CommandHandler("method2", method2))
     application.add_handler(CommandHandler("method3", method3))
+    application.add_handler(CommandHandler("method4", method4))
     application.add_handler(CommandHandler("info", info))
     application.add_handler(CommandHandler("clear", clear))
     application.add_handler(CommandHandler("shownak", shownak))

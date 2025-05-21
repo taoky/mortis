@@ -168,16 +168,18 @@ class Mortis:
         self,
         lines: list[str],
         api_key: str,
-        method: Literal["m1", "m2", "m3"] = "m2",
+        method: Literal["m1", "m2", "m3", "m4"] = "m2",
         base_url: str = "https://api.siliconflow.cn/v1",
         chat_model: str = "Pro/deepseek-ai/DeepSeek-V3",
         embedding_model: str = "BAAI/bge-m3",
         embedding_path: Optional[Path] = None,
     ):
-        if method == "m3":
-            assert embedding_model, "embedding_model must be provided for method m3"
+        if method == "m3" or method == "m4":
+            assert embedding_model, (
+                f"embedding_model must be provided for method {method}"
+            )
             assert embedding_path is not None, (
-                "embedding_path must be provided for method m3"
+                f"embedding_path must be provided for method {method}"
             )
         self.lines = lines
         self.method = method
@@ -186,8 +188,8 @@ class Mortis:
         self.embedding = np.load(embedding_path) if embedding_path else None
         self.embedding_model = embedding_model
 
-    def set_method(self, method: Literal["m1", "m2", "m3"]):
-        if method not in ["m1", "m2", "m3"]:
+    def set_method(self, method: Literal["m1", "m2", "m3", "m4"]):
+        if method not in ["m1", "m2", "m3", "m4"]:
             raise ValueError(f"Invalid method: {method}")
         if method == "m3":
             assert self.embedding_model, (
@@ -206,9 +208,7 @@ class Mortis:
                 result.append(line)
         return result
 
-    def _find_topk_cosine_similar(
-        self, embedding: list[float], k: int = 20
-    ) -> list[str]:
+    def _find_topk_cosine_similar(self, embedding: list[float], k: int) -> list[str]:
         distances = cdist([embedding], self.embedding, metric="cosine")
         closest_indices = np.argsort(distances[0])[:k]
         closest_lines = [self.lines[i] for i in closest_indices]
@@ -222,6 +222,8 @@ class Mortis:
                 return await self._respond_m2(context)
             case "m3":
                 return await self._respond_m3(context)
+            case "m4":
+                return await self._respond_m4(context)
             case _:
                 raise ValueError(f"Unknown method: {self.method}")
 
@@ -287,7 +289,7 @@ class Mortis:
             return (None, response_text[4:])
         return (response_text, None)
 
-    async def _respond_m3(self, context: str) -> tuple[Optional[str], Optional[str]]:
+    async def _respond_m3_1(self, context: str, k: int = 20) -> Optional[list[str]]:
         logger.debug("context: %s", context)
         prompt = prompt_m3_1.format(context=context)
         response = await self.openai.chat.completions.create(
@@ -302,15 +304,21 @@ class Mortis:
         response_text = response.choices[0].message.content.strip()
         logger.debug("LLM reply: %s", response_text)
         if len(response_text) == 0:
-            logger.warning("No reply")
-            return (None, "模型无回复")
+            return None
         response = await self.openai.embeddings.create(
             model=self.embedding_model,
             input=response_text,
         )
         response_embedding = response.data[0].embedding
-        closest_lines = self._find_topk_cosine_similar(response_embedding)
+        closest_lines = self._find_topk_cosine_similar(response_embedding, k)
         logger.debug("Most similar lines: %s", closest_lines)
+        return closest_lines
+
+    async def _respond_m3(self, context: str) -> tuple[Optional[str], Optional[str]]:
+        closest_lines = await self._respond_m3_1(context)
+        if closest_lines is None:
+            logger.warning("No reply")
+            return (None, "模型无回复")
         prompt2 = prompt_m3_2.format(
             results=json.dumps(closest_lines, ensure_ascii=False), context=context
         )
@@ -329,6 +337,13 @@ class Mortis:
             logger.warning("LLM NAK: %s", response_text[4:])
             return (None, response_text[4:])
         return (response_text, None)
+
+    async def _respond_m4(self, context: str) -> tuple[Optional[str], Optional[str]]:
+        closest_lines = await self._respond_m3_1(context, k=1)
+        if closest_lines is None or len(closest_lines) == 0:
+            logger.warning("No reply")
+            return (None, "模型无回复")
+        return (closest_lines[0], None)
 
 
 if __name__ == "__main__":

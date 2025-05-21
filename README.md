@@ -16,6 +16,7 @@
 - m2：分两步，第一步让模型提供适合回复的关键词，搜索后第二步让模型选择
     - 不直接使用 function call 的原因是，至少目前测试下来 siliconflow 的 function calling 几乎不工作，模型大部分时候不会调用函数，会自己瞎编回复，即使调用很多时候调用方式也不对。
 - m3：分两阶段，第一阶段生成每一句台词的 embedding 保存到本地（参考 [embeddinggen-m3.py](playground/embeddinggen-m3.py)，生成 embedding 的金钱成本极低），第二阶段让模型输出回复，回复也生成 embedding，选择最相似的 top20 回复，然后让模型选一个。
+- m4：和 m3 类似，但是让模型输出的回复直接和 embedding 比对，选择最接近的回复。
 
 ## mortis.py
 
