@@ -58,7 +58,7 @@ else:
 
 USERNAME_PATTERN = re.compile(r"@(\w+)")
 
-mortis = Mortis(lines, key, embedding_path=embedding_path)
+mortis = Mortis(lines, key, embedding_path=embedding_path, method="m4")
 
 
 username_mapping = {}
@@ -151,7 +151,7 @@ async def periodic_reply(application: Application):
                     replied[chat_id] = True
             except Exception as e:
                 logging.exception(f"Error replying to chat {chat_id}: {e}")
-        await asyncio.sleep(10)
+        await asyncio.sleep(3)
 
 
 async def method_perm_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
