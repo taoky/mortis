@@ -142,7 +142,7 @@ async def periodic_reply(application: Application):
                         await application.bot.send_message(
                             chat_id=chat_id, text=response
                         )
-                        append_chat(chat_id, ("Bot", response, datetime.now()))
+                        append_chat(chat_id, ("Bot", response, datetime.now(timezone.utc)))
                     else:
                         if is_shownak:
                             await application.bot.send_message(
